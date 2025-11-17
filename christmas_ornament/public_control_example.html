@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Remote ESP8266 Control</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    .button {
+      display: inline-block;
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      color: white;
+    }
+    .btn-on { background: #4CAF50; }
+    .btn-off { background: #f44336; }
+    .btn-both { background: #2196F3; }
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      background: #e3f2fd;
+      border-left: 4px solid #2196F3;
+    }
+    .info {
+      background: #fff3cd;
+      padding: 15px;
+      margin-top: 20px;
+      border-left: 4px solid #ffc107;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌍 Remote ESP8266 Control</h1>
+    <p>This page sends commands to your ESP8266 via an external API.</p>
+    
+    <div id="status" class="status" style="display:none;"></div>
+    
+    <h2>Control LEDs:</h2>
+    <div>
+      <button class="button btn-on" onclick="sendCommand('led1_on')">LED1 ON</button>
+      <button class="button btn-off" onclick="sendCommand('led1_off')">LED1 OFF</button>
+    </div>
+    <div>
+      <button class="button btn-on" onclick="sendCommand('led2_on')">LED2 ON</button>
+      <button class="button btn-off" onclick="sendCommand('led2_off')">LED2 OFF</button>
+    </div>
+    <div>
+      <button class="button btn-both" onclick="sendCommand('both_on')">Both ON</button>
+      <button class="button btn-off" onclick="sendCommand('both_off')">Both OFF</button>
+    </div>
+
+    <div class="info">
+      <h3>⚙️ Setup Instructions:</h3>
+      <ol>
+        <li><strong>Create an API endpoint</strong> that accepts commands and stores them</li>
+        <li><strong>Set REMOTE_API_URL</strong> in your ESP8266 code (line 52)</li>
+        <li><strong>Update API_URL below</strong> to match your endpoint</li>
+        <li>Your ESP8266 polls every 5 seconds for new commands</li>
+      </ol>
+      
+      <h4>Example API Structure:</h4>
+      <pre>
+GET /device/commands?deviceId=ESP8266_001
+Returns: "led1_on" (or null if no command)
+
+POST /device/status
+Body: {"deviceId":"ESP8266_001","command":"led1_on","status":"success"}
+      </pre>
+      
+      <h4>🚀 Recommended: AWS Lambda (Easiest)</h4>
+      <p><strong>Deploy in 5 minutes:</strong></p>
+      <ol>
+        <li>Copy code from <code>lambda/esp8266-remote-control.js</code></li>
+        <li>Create Lambda function in AWS Console</li>
+        <li>Create Function URL</li>
+        <li>Update API_URL above with your Lambda URL</li>
+      </ol>
+      <p><strong>Cost:</strong> Free tier covers ~5 million requests/month</p>
+      
+      <h4>Alternative Services:</h4>
+      <ul>
+        <li><strong>Firebase Realtime Database</strong> - Free, easy setup</li>
+        <li><strong>Google Cloud Functions</strong> - Serverless API</li>
+        <li><strong>Heroku</strong> - Simple deployment</li>
+        <li><strong>Your own server</strong> - Node.js, Python, etc.</li>
+      </ul>
+      <p><strong>See:</strong> <code>lambda/DEPLOY_INSTRUCTIONS.md</code> for detailed AWS setup</p>
+    </div>
+  </div>
+
+  <script>
+    // CHANGE THIS to your AWS Lambda Function URL
+    // Example: https://xxxxx.lambda-url.us-east-1.on.aws
+    const API_URL = 'https://your-lambda-url.lambda-url.us-east-1.on.aws';
+    
+    async function sendCommand(command) {
+      const statusDiv = document.getElementById('status');
+      
+      try {
+        // Send command to your API
+        const response = await fetch(`${API_URL}/device/command`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            deviceId: 'ESP8266_001',
+            command: command
+          })
+        });
+        
+        if (response.ok) {
+          statusDiv.style.display = 'block';
+          statusDiv.innerHTML = `✅ Command "${command}" sent! ESP8266 will receive it within 5 seconds.`;
+          statusDiv.style.background = '#d4edda';
+          statusDiv.style.borderLeftColor = '#28a745';
+        } else {
+          throw new Error('API request failed');
+        }
+      } catch (error) {
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = `❌ Error: Could not send command. Check your API configuration.`;
+        statusDiv.style.background = '#f8d7da';
+        statusDiv.style.borderLeftColor = '#dc3545';
+        console.error('Error:', error);
+      }
+    }
+
+    // Display connection status
+    window.onload = function() {
+      console.log('Remote control page loaded');
+      console.log('API URL:', API_URL);
+    };
+  </script>
+</body>
+</html>

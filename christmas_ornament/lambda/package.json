@@ -1,0 +1,12 @@
+{
+  "name": "esp8266-remote-control",
+  "version": "1.0.0",
+  "description": "AWS Lambda function for remote ESP8266 control",
+  "main": "esp8266-remote-control.js",
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": ["esp8266", "iot", "remote-control"],
+  "author": "",
+  "license": "MIT"
+}

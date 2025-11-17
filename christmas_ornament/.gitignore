@@ -1,0 +1,32 @@
+# Binaries
+bin/
+*.o
+*.elf
+*.bin
+*.hex
+
+# Arduino build artifacts
+build/
+*.hex
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# AWS credentials (if accidentally committed)
+.aws/
+
+# Logs
+*.log
+
+# Compiled lambda code (if present)
+lambda.zip
+function.zip
+

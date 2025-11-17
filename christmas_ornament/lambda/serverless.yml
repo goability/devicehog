@@ -1,0 +1,56 @@
+service: esp8266-remote-control
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  environment:
+    LOG_LEVEL: info
+  
+functions:
+  esp8266Control:
+    handler: esp8266-remote-control.handler
+    timeout: 10
+    memorySize: 128
+    url:
+      cors:
+        allowedOrigins:
+          - '*'
+        allowedHeaders:
+          - Content-Type
+          - x-api-key
+        allowedMethods:
+          - GET
+          - POST
+          - OPTIONS
+    
+  # If you want to use DynamoDB instead of in-memory storage:
+  # environment:
+  #   TABLE_NAME: esp8266-commands
+  #   TABLE_ARN: !GetAtt CommandsTable.Arn
+  # iam:
+  #   role:
+  #     statements:
+  #       - Effect: Allow
+  #         Action:
+  #           - dynamodb:GetItem
+  #           - dynamodb:PutItem
+  #           - dynamodb:DeleteItem
+  #         Resource: !GetAtt CommandsTable.Arn
+
+# Uncomment to add DynamoDB table:
+# resources:
+#   Resources:
+#     CommandsTable:
+#       Type: AWS::DynamoDB::Table
+#       Properties:
+#         TableName: esp8266-commands
+#         BillingMode: PAY_PER_REQUEST
+#         AttributeDefinitions:
+#           - AttributeName: deviceId
+#             AttributeType: S
+#         KeySchema:
+#           - AttributeName: deviceId
+#             KeyType: HASH

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ornament Control Panel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Ornament Control Panel</h1>
+  <div class="rgb-section">
+    <div class="rgb-label">RGB LED Control</div>
+    <input type="color" id="colorPicker" value="#ff0000" onchange="setRGBColor()">
+    <div style="margin-top: 10px;">
+      <a href="/rgb/off" class="button btn-off">Lights OFF</a>
+    </div>
+  </div>
+  <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+    <a href="/info" class="button-small" style="background: #2196F3;">Device Info</a>
+    <a href="/wifistatus" class="button-small" style="background: #9C27B0;">WiFi Settings</a>
+    <a href="/wifireset" class="button-small" style="background: #FF9800;">Reset WiFi</a>
+    <a href="/rgbtest" class="button-small" style="background: #9C27B0;">RGB Test</a>
+  </div>
+  </div>
+  <script src="/script.js"></script>
+</body>
+</html>
+
