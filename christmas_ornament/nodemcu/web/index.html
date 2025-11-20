@@ -9,9 +9,26 @@
     <h1>Ornament Control Panel</h1>
   <div class="rgb-section">
     <div class="rgb-label">RGB LED Control</div>
-    <input type="color" id="colorPicker" value="#ff0000" onchange="setRGBColor()">
+    <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+      <a href="/rgb?r=255&g=0&b=0" class="button" style="background: #ff0000; min-width: 100px;">RED</a>
+      <a href="/rgb?r=0&g=255&b=0" class="button" style="background: #00ff00; min-width: 100px;">GREEN</a>
+      <a href="/rgb?r=0&g=0&b=255" class="button" style="background: #0000ff; min-width: 100px;">BLUE</a>
+    </div>
     <div style="margin-top: 10px;">
       <a href="/rgb/off" class="button btn-off">Lights OFF</a>
+    </div>
+  </div>
+  <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+    <div class="rgb-label">LED 1 Control</div>
+    <a href="/led1/on" class="button btn-on">LED 1 ON</a>
+    <a href="/led1/off" class="button btn-off">LED 1 OFF</a>
+    <div style="margin-top: 15px;">
+      <div style="margin-bottom: 10px;">
+        <label for="fadeSpeed" style="display: block; margin-bottom: 5px; font-weight: bold;">Fade Speed: <span id="speedValue">10</span> ms</label>
+        <input type="range" id="fadeSpeed" min="1" max="100" value="10" style="width: 100%;" oninput="updateFadeSpeed(this.value)">
+      </div>
+      <a href="#" onclick="startFade(); return false;" class="button btn-on" style="margin-right: 10px;">Start Fade</a>
+      <a href="#" onclick="stopFade(); return false;" class="button btn-off">Stop Fade</a>
     </div>
   </div>
   <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">

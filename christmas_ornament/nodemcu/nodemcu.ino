@@ -31,7 +31,14 @@ int currentR = 0;
 int currentG = 0;
 int currentB = 0;
 
-const int ledPin1 = D0; // RED LED
+// LED1 fade control variables
+bool led1FadeEnabled = false;
+int led1FadeSpeed = 10;  // Delay in milliseconds between fade steps (1-100)
+int led1Brightness = 0;  // Current brightness (0-255)
+int led1FadeDirection = 1;  // 1 = fading up, -1 = fading down
+unsigned long lastFadeUpdate = 0;
+
+const int ledPin1 = D1; // RED LED
 const int ledPin2 = D2; // GREEN LED
 
 // RGB LED pins
@@ -138,9 +145,26 @@ h1 { color: #333; }
     <h1>Ornament Control Panel</h1>
   <div class="rgb-section">
     <div class="rgb-label">RGB LED Control</div>
-    <input type="color" id="colorPicker" value="#ff0000" onchange="setRGBColor()">
+    <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+      <a href="/rgb?r=255&g=0&b=0" class="button" style="background: #ff0000; min-width: 100px;">RED</a>
+      <a href="/rgb?r=0&g=255&b=0" class="button" style="background: #00ff00; min-width: 100px;">GREEN</a>
+      <a href="/rgb?r=0&g=0&b=255" class="button" style="background: #0000ff; min-width: 100px;">BLUE</a>
+    </div>
     <div style="margin-top: 10px;">
       <a href="/rgb/off" class="button btn-off">Lights OFF</a>
+    </div>
+  </div>
+  <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+    <div class="rgb-label">LED 1 Control</div>
+    <a href="/led1/on" class="button btn-on">LED 1 ON</a>
+    <a href="/led1/off" class="button btn-off">LED 1 OFF</a>
+    <div style="margin-top: 15px;">
+      <div style="margin-bottom: 10px;">
+        <label for="fadeSpeed" style="display: block; margin-bottom: 5px; font-weight: bold;">Fade Speed: <span id="speedValue">10</span> ms</label>
+        <input type="range" id="fadeSpeed" min="1" max="100" value="10" style="width: 100%;" oninput="updateFadeSpeed(this.value)">
+      </div>
+      <a href="#" onclick="startFade(); return false;" class="button btn-on" style="margin-right: 10px;">Start Fade</a>
+      <a href="#" onclick="stopFade(); return false;" class="button btn-off">Stop Fade</a>
     </div>
   </div>
   <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
@@ -152,30 +176,48 @@ h1 { color: #333; }
   </div>
   
   <script>
-    // Restore color picker value from URL parameters on page load
-    function restoreColorPicker() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const r = urlParams.get('r');
-      const g = urlParams.get('g');
-      const b = urlParams.get('b');
-      if (r !== null && g !== null && b !== null) {
-        const rHex = parseInt(r).toString(16).padStart(2, '0');
-        const gHex = parseInt(g).toString(16).padStart(2, '0');
-        const bHex = parseInt(b).toString(16).padStart(2, '0');
-        document.getElementById('colorPicker').value = '#' + rHex + gHex + bHex;
-      }
+    // RGB color button handlers - buttons use direct links, no JS needed
+    
+    // LED1 fade control functions
+    function updateFadeSpeed(speed) {
+      document.getElementById('speedValue').textContent = speed;
+      // Send speed to server
+      fetch('/led1/fadespeed?speed=' + speed)
+        .then(response => response.text())
+        .then(data => console.log('Fade speed updated:', data))
+        .catch(error => console.error('Error updating fade speed:', error));
     }
     
-    function setRGBColor() {
-      const color = document.getElementById('colorPicker').value;
-      const r = parseInt(color.substring(1, 3), 16);
-      const g = parseInt(color.substring(3, 5), 16);
-      const b = parseInt(color.substring(5, 7), 16);
-      window.location.href = '/rgb?r=' + r + '&g=' + g + '&b=' + b;
+    function startFade() {
+      fetch('/led1/fade?action=start')
+        .then(response => response.text())
+        .then(data => {
+          console.log('Fade started:', data);
+          alert('Fade started!');
+        })
+        .catch(error => {
+          console.error('Error starting fade:', error);
+          alert('Error starting fade');
+        });
     }
     
-    // Call on page load to restore color
-    window.onload = restoreColorPicker;
+    function stopFade() {
+      fetch('/led1/fade?action=stop')
+        .then(response => response.text())
+        .then(data => {
+          console.log('Fade stopped:', data);
+          alert('Fade stopped!');
+        })
+        .catch(error => {
+          console.error('Error stopping fade:', error);
+          alert('Error stopping fade');
+        });
+    }
+    
+    // Page loaded
+    window.onload = function() {
+      // Any initialization code can go here
+    };
     
     
   </script>
@@ -203,7 +245,9 @@ void handleRoot() {
 // Function to handle LED1 ON
 void handleLED1On() {
   if (!isAuthenticated()) return;
+  led1FadeEnabled = false;  // Stop fading
   digitalWrite(ledPin1, HIGH);  // HIGH = ON for active HIGH LEDs
+  led1Brightness = 255;
   server.send(200, "text/html", index_html);
   Serial.println("LED1 turned ON");
 }
@@ -211,9 +255,42 @@ void handleLED1On() {
 // Function to handle LED1 OFF
 void handleLED1Off() {
   if (!isAuthenticated()) return;
+  led1FadeEnabled = false;  // Stop fading
   digitalWrite(ledPin1, LOW);  // LOW = OFF for active HIGH LEDs
+  led1Brightness = 0;
   server.send(200, "text/html", index_html);
   Serial.println("LED1 turned OFF");
+}
+
+// Function to handle LED1 fade speed setting
+void handleLED1FadeSpeed() {
+  if (!isAuthenticated()) return;
+  String speed_str = server.arg("speed");
+  int speed = speed_str.toInt();
+  // Clamp speed to 1-100 milliseconds
+  led1FadeSpeed = constrain(speed, 1, 100);
+  server.send(200, "text/plain", "OK");
+  Serial.printf("LED1 fade speed set to %d ms\n", led1FadeSpeed);
+}
+
+// Function to handle LED1 fade enable/disable
+void handleLED1Fade() {
+  if (!isAuthenticated()) return;
+  String action = server.arg("action");
+  if (action == "start") {
+    led1FadeEnabled = true;
+    led1Brightness = 0;
+    led1FadeDirection = 1;
+    server.send(200, "text/plain", "Fade started");
+    Serial.println("LED1 fade started");
+  } else if (action == "stop") {
+    led1FadeEnabled = false;
+    analogWrite(ledPin1, led1Brightness);
+    server.send(200, "text/plain", "Fade stopped");
+    Serial.println("LED1 fade stopped");
+  } else {
+    server.send(400, "text/plain", "Invalid action");
+  }
 }
 
 // Function to handle LED2 ON
@@ -593,6 +670,8 @@ void setup() {
   server.on("/", handleRoot);
   server.on("/led1/on", handleLED1On);
   server.on("/led1/off", handleLED1Off);
+  server.on("/led1/fade", handleLED1Fade);  // Start/stop fade with ?action=start or ?action=stop
+  server.on("/led1/fadespeed", handleLED1FadeSpeed);  // Set fade speed with ?speed=1-100
   server.on("/led2/on", handleLED2On);
   server.on("/led2/off", handleLED2Off);
   server.on("/both/on", handleBothOn);
@@ -612,4 +691,27 @@ void setup() {
 void loop() {
   server.handleClient();  // Handle web server requests
   MDNS.update();  // Handle mDNS requests
+  
+  // Handle LED1 fading effect
+  if (led1FadeEnabled) {
+    unsigned long currentTime = millis();
+    if (currentTime - lastFadeUpdate >= led1FadeSpeed) {
+      lastFadeUpdate = currentTime;
+      
+      // Update brightness
+      led1Brightness += led1FadeDirection * 5;  // Step size of 5
+      
+      // Reverse direction at limits
+      if (led1Brightness >= 255) {
+        led1Brightness = 255;
+        led1FadeDirection = -1;
+      } else if (led1Brightness <= 0) {
+        led1Brightness = 0;
+        led1FadeDirection = 1;
+      }
+      
+      // Write PWM value to LED
+      analogWrite(ledPin1, led1Brightness);
+    }
+  }
 }
